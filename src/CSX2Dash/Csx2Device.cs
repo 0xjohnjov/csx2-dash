@@ -234,6 +234,14 @@ namespace CSX2Dash
             return Send(p, BrightnessDelay);
         }
 
+        /// <summary>Backlight off: UGT's "turn off" command, LCD level 0 (UGTManager.cs L23840-23872).</summary>
+        public bool LcdOff()
+        {
+            var p = new byte[63]; p[0] = 0x61; p[1] = 0;
+            for (int i = 2; i < 16; i++) p[i] = 0xFF;
+            return Send(p, BrightnessDelay);
+        }
+
         /// <summary>LCD backlight 1..16.</summary>
         public bool LcdBrightness(int level)
         {

@@ -47,7 +47,7 @@ Quick check: open `%APPDATA%\UltimateGameTech` in Explorer (paste it into the ad
 
 - **Page buttons:** SimHub → **Controls and events** → add a new mapping → press the wheel button → choose the action **CSX2Dash.NextPage** (and **PreviousPage**, if you like). Other actions: `CycleDriverInfo`, `NextDriverPage`, `ToggleShiftFlash`.
 - **Start SimHub with Windows** (SimHub settings). The wheel has to be licensed within ~30 seconds of powering up, so the simplest routine is "SimHub is always running".
-- **Brightness, shift flash, flag LEDs:** on the CSX2 Dash page.
+- **Brightness, shift flash, flag LEDs, screen off when idle:** on the CSX2 Dash page. With "Turn the wheel screen and LEDs off…" ticked (the default), the wheel goes dark whenever no game is running and when SimHub closes. Untick it to keep the logo on instead.
 - **Changed a layout in UGT Manager?** Close UGT Manager, then press **Reload UGT layouts / settings** on the CSX2 Dash page.
 
 ## 5. Everyday rules
@@ -102,4 +102,5 @@ Then install with `src\CSX2Dash\install.cmd` (run as administrator, with SimHub 
 **Hardware tests** (in `tools\diagnostics`; close SimHub and UGT Manager first). Each waits for you to unplug and replug the wheel:
 - `LicenceTest.exe`: licence handshake, then 3 minutes of health checks (`--no-licence` for the control run, where the wheel should freeze).
 - `PageStressTest.exe`: three back-to-back rounds of page changes through all your layouts.
+- `LcdOffTest.exe`: licenses the wheel, turns the screen and LEDs off for 10 s, then restores them (`--now` skips the replug wait).
 - `LiveStressTest.exe`: two rounds of page changes through all your layouts, then repeated flips between the two layouts that use the most fonts, each followed by 3 s of race-like text and LED traffic. Use `--all-leds` to keep every LED lit.

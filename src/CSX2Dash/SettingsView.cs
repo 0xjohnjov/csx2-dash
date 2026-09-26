@@ -44,6 +44,10 @@ namespace CSX2Dash
             flags.Click += (a, b) => { s.FlagLeds = flags.IsChecked == true; p.SettingsChanged(); };
             root.Children.Add(flags);
 
+            var screenOff = new CheckBox { Content = "Turn the wheel screen and LEDs off when no game is running, and when SimHub closes", IsChecked = s.ScreenOffWhenIdle, Margin = new Thickness(0, 4, 0, 4) };
+            screenOff.Click += (a, b) => { s.ScreenOffWhenIdle = screenOff.IsChecked == true; p.SettingsChanged(); };
+            root.Children.Add(screenOff);
+
             var reload = new Button { Content = "Reload UGT layouts / settings", Width = 260, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 12, 0, 0) };
             reload.Click += (a, b) => { p.RequestReload(); Dispatcher.BeginInvoke(new Action(FillPages), DispatcherPriority.Background); };
             root.Children.Add(reload);

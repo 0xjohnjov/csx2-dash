@@ -153,7 +153,7 @@ Unload: `[0]=0x42, [1]=RefNum`, rest 0xFF, via `SendData`. Success is a reply th
 * `SetColourBrightness` L19715: `[0]=0x66, [1]=colour (1=Red, 2=Green, 3=Blue, 4=Yellow), [2]=OnTime (0..255)`, rest 0xFF. Wait `Delay.Brightness` afterwards.
 * `LCD_Contrast_Change` L19825: `[0]=0x61, [1]=level (1..LCD_Max; LCD_Max defaults to 16, L2153)`, [2..15]=0xFF, the rest zero.
 * Value formula: `v = (int)Math.Round((max-min)*Global_Brightness + min)`. Defaults (L197054-197074): Global 0.4, R 2..128, G 1..64, B 3..128, Y 3..128, LCD 4..16. That gives R=52, G=26, B=53, Y=53, LCD=9 (uses .NET banker's rounding; `Convert.ToInt16`).
-* On close with "turn off" enabled (L23840-23872): clear, LEDs off, `0x61 0x00`. For "CC" firmware it also sends `0x20 0x10 idx 0 0 0 0 0` for idx 0..14. That is the **button-LED mode = Off** command (`SetLedMode` L189977), not the rev lights.
+* On close with "turn off" enabled (L23840-23872): clear, LEDs off, `0x61 0x00`. **Verified on hardware:** level 0 turns the backlight fully off, and the wheel keeps responding while dark. UGT resets its cached LCD level to 0 on connect (L21013), so it always re-sends brightness and a dark screen can't get stuck. CSX2 Dash uses this for "screen off when idle". For "CC" firmware it also sends `0x20 0x10 idx 0 0 0 0 0` for idx 0..14. That is the **button-LED mode = Off** command (`SetLedMode` L189977), not the rev lights.
 * Alternative brightness commands exist in the button-box config form: `0x20 0x50 colour OnTime` (L189746) and `0x20 0x60 0x01 lcd` (L189826). They are not used in race.
 
 ### 3.7 RGB rev-LED colour (not used for your firmware)
@@ -325,5 +325,6 @@ Two hosts writing to the vendor channel at once lock the firmware up. Seen with 
 |---|---|
 | All LEDs lit + brand logo, buttons work | Freshly powered up and not yet licensed. It will freeze in 30–60 s unless a host connects. |
 | All LEDs lit + brand logo, buttons dead | Licence watchdog froze it. Power-cycle, with the host already running. |
+| Screen dark, no LEDs | Normal with CSX2 Dash 1.1.0+ when no game is running (screen off when idle). |
 | Screen stuck mid-page, buttons dead | Firmware hang during drawing/page change. Power-cycle. |
 | `0x98` write times out | Firmware hung. Software resets (`0x94`, `pnputil /restart-device`) don't help; only a USB power cycle does. |

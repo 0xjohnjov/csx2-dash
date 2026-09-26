@@ -24,6 +24,7 @@ namespace CSX2Dash
         public int LedBrightness = 52;       // red/blue/yellow on-time; green uses half (UGT default ratio)
         public bool ShiftFlash = false;
         public bool FlagLeds = true;
+        public bool ScreenOffWhenIdle = true;  // backlight + LEDs off when no game is live and when SimHub closes
     }
 
     [PluginDescription("Drives the Cube Controls CSX2 (UGT) wheel screen and shift lights from SimHub, using your UGT Manager layouts")]
@@ -44,6 +45,7 @@ namespace CSX2Dash
         readonly ShiftLights leds = new ShiftLights();
         Thread worker;
         volatile bool running;
+        bool dark;   // wheel backlight is off (worker thread only)
         volatile bool pageDirty = true, settingsDirty = true, reloadRequested;
 
         // Latest SimHub frame, handed from DataUpdate to the worker thread.
@@ -158,7 +160,7 @@ namespace CSX2Dash
                         }
                         int licence = dev.LicenceHandshake();   // without this the wheel freezes 30-60 s after power-up
                         if (licence < 15) SimHub.Logging.Current.Warn("CSX2 Dash: licence handshake failed at round " + licence);
-                        fontRefs.Clear(); settingsDirty = true; pageDirty = true;
+                        fontRefs.Clear(); settingsDirty = true; pageDirty = true; dark = false;
                         SimHub.Logging.Current.Info("CSX2 Dash connected, firmware " + FirmwareVersion + ", licence " + (licence == 15 ? "OK" : "FAILED"));
                     }
 
@@ -167,8 +169,9 @@ namespace CSX2Dash
                         settingsDirty = false;
                         int v = Settings.LedBrightness;
                         dev.LedBrightness(1, v); dev.LedBrightness(2, Math.Max(1, v / 2)); dev.LedBrightness(3, v); dev.LedBrightness(4, v);
-                        dev.LcdBrightness(Settings.LcdBrightness);
+                        if (!dark) dev.LcdBrightness(Settings.LcdBrightness);   // keep a dark idle screen dark
                         leds.ShiftFlash = Settings.ShiftFlash; leds.FlagLeds = Settings.FlagLeds;
+                        if (shown == Mode.Idle) shown = Mode.None;                // re-apply the idle screen (setting may have changed)
                     }
 
                     var d = frame;
@@ -176,15 +179,21 @@ namespace CSX2Dash
                     {
                         if (shown != Mode.Idle)
                         {
-                            dev.ClearScreen(); dev.BrandScreen(); dev.SetLeds(new byte[5]);
+                            if (Settings.ScreenOffWhenIdle) Blank();
+                            else
+                            {
+                                if (dark) { dev.LcdBrightness(Settings.LcdBrightness); dark = false; }
+                                dev.ClearScreen(); dev.BrandScreen(); dev.SetLeds(new byte[5]);
+                            }
                             shown = Mode.Idle; lastLeds = null;
                         }
-                        Status = "connected (" + FirmwareVersion + ") - waiting for a game";
+                        Status = "connected (" + FirmwareVersion + ") - waiting for a game" + (dark ? " (wheel screen off)" : "");
                         Thread.Sleep(250);
                         continue;
                     }
 
                     // ---- live
+                    if (dark) { dev.LcdBrightness(Settings.LcdBrightness); dark = false; }
                     if (shown != Mode.Live || pageDirty || current == null)
                     {
                         pageDirty = false;
@@ -231,13 +240,29 @@ namespace CSX2Dash
             dev.ShowPage(l, fontRefs, w => SimHub.Logging.Current.Warn("CSX2 Dash: " + w));
         }
 
+        // UGT's "turn off": clear, LEDs off, backlight level 0. UGT Manager resets its cached LCD level to 0 on
+        // connect (UGTManager.cs L21013), so it always turns the backlight back on when it takes over.
+        void Blank()
+        {
+            dev.ClearScreen(); dev.SetLeds(new byte[5]); dev.LcdOff();
+            dark = true;
+        }
+
+        // Hand the wheel back. On SimHub exit (running == false) blank it if the user wants that; when pausing for
+        // UGT Manager or when disabled, leave the brand screen at normal brightness.
         void Release(ref Mode shown)
         {
             if (dev.IsOpen)
             {
-                if (shown != Mode.None) { dev.ClearScreen(); dev.BrandScreen(); dev.SetLeds(new byte[5]); }
+                if (!running && Settings.ScreenOffWhenIdle) Blank();
+                else if (shown != Mode.None || dark)
+                {
+                    if (dark) dev.LcdBrightness(Settings.LcdBrightness);
+                    dev.ClearScreen(); dev.BrandScreen(); dev.SetLeds(new byte[5]);
+                }
                 dev.Close();
             }
+            dark = false;
             shown = Mode.None;
         }
     }
