@@ -1,0 +1,132 @@
+# Builds CSX2 Dash from source on a clean GitHub-hosted Windows machine, runs the tests, and records a
+# signed build-provenance attestation for every binary. Pushing a tag like v1.0.1 also publishes a release.
+# Anyone can check a download was built here, from this repo's source:
+#   gh attestation verify CSX2Dash.dll --repo 0xjohnjov/csx2-dash
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # The plugin compiles against SimHub's own DLLs (not redistributable), so the build installs this exact,
+  # hash-checked SimHub release from its official GitHub page.
+  SIMHUB_VERSION: '9.10.15'
+  SIMHUB_ZIP_SHA256: '17ccb85ffd380e9d7d7ced765e39c6123e15f6234c669242e8f07892f9ce1bb5'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write        # publish the release (tags only)
+      id-token: write        # sign the build attestation
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Cache SimHub download
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}\simhub-dl
+          key: simhub-${{ env.SIMHUB_VERSION }}-${{ env.SIMHUB_ZIP_SHA256 }}
+
+      - name: Download and verify SimHub ${{ env.SIMHUB_VERSION }}
+        shell: pwsh
+        run: |
+          $dl = Join-Path $env:RUNNER_TEMP 'simhub-dl'
+          New-Item -ItemType Directory -Force $dl | Out-Null
+          $zip = Join-Path $dl "SimHub.$env:SIMHUB_VERSION.zip"
+          if (-not (Test-Path $zip)) {
+            $ProgressPreference = 'SilentlyContinue'
+            Invoke-WebRequest "https://github.com/SHWotever/SimHub/releases/download/$env:SIMHUB_VERSION/SimHub.$env:SIMHUB_VERSION.zip" -OutFile $zip
+          }
+          $h = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($h -ne $env:SIMHUB_ZIP_SHA256) { throw "SimHub download does not match the pinned SHA256 (got $h)" }
+          Expand-Archive $zip (Join-Path $env:RUNNER_TEMP 'simhub-setup') -Force
+
+      - name: Install SimHub silently (build references only)
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem (Join-Path $env:RUNNER_TEMP 'simhub-setup') -Filter 'SimHubSetup_*.exe' | Select-Object -First 1
+          $dir = Join-Path $env:RUNNER_TEMP 'SimHub'
+          $log = Join-Path $env:RUNNER_TEMP 'simhub-install.log'
+          $p = Start-Process $setup.FullName -PassThru -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/NOICONS', "/DIR=`"$dir`"", "/LOG=`"$log`"")
+          if (-not $p.WaitForExit(1500000)) { throw 'SimHub installer timed out' }
+          Get-Process SimHubWPF -ErrorAction SilentlyContinue | Stop-Process -Force
+          $need = 'SimHub.Plugins.dll', 'GameReaderCommon.dll', 'SimHub.Logging.dll', 'WoteverCommon.dll', 'log4net.dll'
+          $missing = $need | Where-Object { -not (Test-Path (Join-Path $dir $_)) }
+          if ($missing) { if (Test-Path $log) { Get-Content $log -Tail 60 }; throw "SimHub install incomplete, missing: $missing" }
+          "SIMHUB=$dir" >> $env:GITHUB_ENV
+
+      - name: Build and test
+        shell: cmd
+        run: |
+          call src\CSX2Dash\build.cmd || exit /b 1
+          call src\Tests\build.cmd || exit /b 1
+          call tools\CSX2Recovery\build.cmd || exit /b 1
+          call tools\diagnostics\build.cmd || exit /b 1
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $isTag = $env:GITHUB_REF_TYPE -eq 'tag'
+          $v = if ($isTag) { $env:GITHUB_REF_NAME } else { "dev-$($env:GITHUB_SHA.Substring(0, 7))" }
+          $fileVer = (Get-Item src\CSX2Dash\CSX2Dash.dll).VersionInfo.ProductVersion
+          if ($isTag -and ('v' + $fileVer) -ne $v) { throw "Tag $v does not match AssemblyInformationalVersion $fileVer (src\CSX2Dash\AssemblyInfo.cs)" }
+
+          New-Item -ItemType Directory -Force dist, stage | Out-Null
+          Copy-Item src\CSX2Dash\CSX2Dash.dll, tools\CSX2Recovery\CSX2Recovery.exe dist\
+          Copy-Item src\CSX2Dash\CSX2Dash.dll, README.md, INSTALL.md, LICENSE stage\
+          "{0}  CSX2Dash.dll" -f (Get-FileHash stage\CSX2Dash.dll -Algorithm SHA256).Hash.ToLower() | Out-File -Encoding ascii stage\SHA256SUMS.txt
+          "Source code, CSX2 Recovery tool and updates: https://github.com/$env:GITHUB_REPOSITORY`r`nStart with INSTALL.md (opens in Notepad)." | Out-File -Encoding ascii stage\GITHUB.txt
+          Compress-Archive -Path stage\* -DestinationPath "dist\CSX2Dash-$v.zip"
+          Get-ChildItem dist -File | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name } | Out-File -Encoding ascii dist\SHA256SUMS.txt
+          Get-Content dist\SHA256SUMS.txt
+          "VERSION=$v" >> $env:GITHUB_ENV
+
+      - name: Attest build provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/CSX2Dash.dll
+            dist/CSX2Recovery.exe
+            dist/*.zip
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CSX2Dash-${{ env.VERSION }}
+          path: dist/
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = @"
+          Built by GitHub Actions from tag ``$env:VERSION`` ([build log]($env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID)).
+
+          - **``CSX2Dash-$env:VERSION.zip``**: the plugin plus install guide (most people want this)
+          - ``CSX2Dash.dll``: the plugin on its own
+          - ``CSX2Recovery.exe``: optional admin tool that diagnoses a frozen wheel
+          - ``SHA256SUMS.txt``: checksums
+
+          **Install:** see [INSTALL.md](https://github.com/$env:GITHUB_REPOSITORY/blob/main/INSTALL.md). **SimHub must be running when the wheel powers up**, close UGT Manager before racing, and don't run FanaLEDs.
+
+          **Verify a download** was built here from this source (needs the GitHub CLI):
+          ``````
+          gh attestation verify CSX2Dash.dll --repo $env:GITHUB_REPOSITORY
+          ``````
+          "@
+          $notes | Out-File -Encoding utf8 notes.md
+          gh release create $env:VERSION (Get-ChildItem dist -File).FullName --title "CSX2 Dash $env:VERSION" --notes-file notes.md --verify-tag

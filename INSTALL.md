@@ -20,12 +20,14 @@ Quick check: open `%APPDATA%\UltimateGameTech` in Explorer (paste it into the ad
 ## 2. Install the plugin
 
 1. **Close SimHub and UGT Manager** (check the system tray too).
-2. Download `CSX2Dash.dll` from the `release` folder or the release page.
-3. *(Recommended)* Check the download is genuine. In PowerShell:
-   ```
-   Get-FileHash .\CSX2Dash.dll -Algorithm SHA256
-   ```
-   The result must match the line for `CSX2Dash.dll` in `SHA256SUMS.txt`.
+2. Download the latest **`CSX2Dash-vX.Y.Z.zip`** (or just `CSX2Dash.dll`) from the [Releases page](https://github.com/0xjohnjov/csx2-dash/releases), and unzip it.
+3. *(Recommended)* Check the download is genuine. Every release is built by GitHub Actions from this repo's source, not on anyone's PC, and GitHub signs a record of that build. Either:
+   - **Strongest:** with the [GitHub CLI](https://cli.github.com/) installed, run
+     ```
+     gh attestation verify CSX2Dash.dll --repo 0xjohnjov/csx2-dash
+     ```
+     It should say the verification succeeded.
+   - **Quick:** in PowerShell, `Get-FileHash .\CSX2Dash.dll -Algorithm SHA256`. The result must match the `CSX2Dash.dll` line in `SHA256SUMS.txt` on the release page.
 4. **Unblock it:** right-click `CSX2Dash.dll` → **Properties** → tick **Unblock** (if it's there) → **OK**. Windows blocks downloaded DLLs, and SimHub can fail to load them otherwise.
 5. Copy `CSX2Dash.dll` into your **SimHub folder**, normally `C:\Program Files (x86)\SimHub\`. Windows will ask for admin permission.
    *Alternative:* put `CSX2Dash.dll` next to `src\CSX2Dash\install.cmd`, then right-click `install.cmd` → **Run as administrator**. If SimHub is somewhere else, first open a command prompt and run `set SIMHUB=D:\path\to\SimHub`, then run `install.cmd` from that prompt.

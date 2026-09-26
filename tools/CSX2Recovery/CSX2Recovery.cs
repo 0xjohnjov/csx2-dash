@@ -14,6 +14,16 @@ using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
+// File metadata shown in Windows (right-click > Properties > Details) and read by antivirus heuristics.
+[assembly: System.Reflection.AssemblyTitle("CSX2 Recovery")]
+[assembly: System.Reflection.AssemblyDescription("Checks and recovers a locked-up Cube Controls CSX2 (UGT) wheel")]
+[assembly: System.Reflection.AssemblyCompany("0xjohnjov")]
+[assembly: System.Reflection.AssemblyProduct("CSX2 Dash")]
+[assembly: System.Reflection.AssemblyCopyright("Copyright (c) 2026 0xjohnjov. MIT License. https://github.com/0xjohnjov/csx2-dash")]
+[assembly: System.Reflection.AssemblyVersion("1.0.1.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.0.1.0")]
+[assembly: System.Reflection.AssemblyInformationalVersion("1.0.1")]
+
 static class CSX2Recovery
 {
     const string WheelUsbPrefix = @"USB\VID_04D8&PID_F4C3\";

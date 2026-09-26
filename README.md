@@ -1,5 +1,7 @@
 # CSX2 Dash: a SimHub plugin for the Cube Controls CSX2 (UGT) wheel
 
+[![Build](https://github.com/0xjohnjov/csx2-dash/actions/workflows/build.yml/badge.svg)](https://github.com/0xjohnjov/csx2-dash/actions/workflows/build.yml)
+
 CSX2 Dash lets **SimHub** drive the screen and shift lights of a **Cube Controls CSX2** steering wheel (the version with Ultimate Game Tech electronics, which shows up in Windows as "UGT Sim LCD and CONTROLS V2"). UGT Manager no longer needs to run while you race.
 
 It draws **your existing UGT dash layouts** with the same backgrounds, fonts, positions and colours, fed by SimHub telemetry. It works in **any game SimHub supports**, not only the ones UGT Manager knew.
@@ -25,7 +27,7 @@ It draws **your existing UGT dash layouts** with the same backgrounds, fonts, po
 
 ```
 README.md, INSTALL.md
-release\                    prebuilt CSX2Dash.dll and CSX2Recovery.exe, plus SHA256SUMS.txt
+.github\workflows\build.yml builds, tests and publishes every release (see "Security and safety")
 src\CSX2Dash\               the SimHub plugin (C#, builds with the compiler built into Windows)
 src\Tests\                  unit tests for the ported UGT formatters
 tools\CSX2Recovery\         optional: one-click recovery for a frozen wheel (runs as admin)
@@ -46,7 +48,8 @@ These are all verified on real hardware. Details are in `docs\UGT-telemetry-prot
 - **The plugin** runs inside SimHub as a normal user. It has **no network code**. It reads UGT Manager's files (read-only) and writes only to `%APPDATA%\CSX2Dash` (personal-best sectors, freeze logs). It talks to the wheel only through its USB HID command channel.
 - **Wheel commands:** it uses the same commands UGT Manager uses during a race (draw text, show SD image, LEDs, brightness, load/unload font, the licence handshake). It **never** sends firmware-update, EEPROM-lock or SD-card write commands.
 - **Admin rights:** only `install.cmd` (to copy the DLL into SimHub's folder) and the optional **CSX2 Recovery** tool (to restart USB devices) need them. The recovery tool starts system programs by full path only, refuses to write its log through file links, and only ever restarts a USB hub that the wheel is alone on.
-- **Prebuilt files:** check them against `release\SHA256SUMS.txt`, or build them yourself from source (see INSTALL.md). Building uses only the C# compiler built into Windows.
+- **Downloads are built in public, not on anyone's PC.** Every file on the [Releases page](https://github.com/0xjohnjov/csx2-dash/releases) (from v1.0.1 on) is compiled and tested by GitHub Actions from this repository's source. GitHub signs a build-provenance attestation for each one. Check any download with `gh attestation verify <file> --repo 0xjohnjov/csx2-dash`, or compare it against `SHA256SUMS.txt`. You can also build it yourself (see INSTALL.md); only the C# compiler built into Windows is needed.
+- **File details:** the DLL and EXE carry product, version and author information (right-click → Properties → Details).
 - `tools\diagnostics\probe.exe` can send any raw command to the wheel. It's for developers; don't use it unless you know what you're sending.
 
 ## Compatibility

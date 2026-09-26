@@ -1,8 +1,9 @@
-# Build outputs (prebuilt binaries live only in release\)
+# Build outputs - releases are built by GitHub Actions (.github/workflows/build.yml), never committed
 *.dll
 *.exe
-!release/*.dll
-!release/*.exe
+*.zip
+dist/
+stage/
 # Test/run logs
 *.log
 logs/
