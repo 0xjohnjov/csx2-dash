@@ -1,0 +1,8 @@
+# Build outputs (prebuilt binaries live only in release\)
+*.dll
+*.exe
+!release/*.dll
+!release/*.exe
+# Test/run logs
+*.log
+logs/

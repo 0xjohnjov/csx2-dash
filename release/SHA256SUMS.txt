@@ -1,0 +1,2 @@
+bad8fe93b0bb2bae4c06c1a22fba1d7915f40332c45b4fe229ab2bf94f7d57c2  CSX2Dash.dll
+e53b54d1b222e3e215e9c5f4a1c5d5d1190e7f517bf73374d013f9db0a9ce013  CSX2Recovery.exe
