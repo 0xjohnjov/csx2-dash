@@ -89,7 +89,9 @@ jobs:
           "{0}  CSX2Dash.dll" -f (Get-FileHash stage\CSX2Dash.dll -Algorithm SHA256).Hash.ToLower() | Out-File -Encoding ascii stage\SHA256SUMS.txt
           "Source code, CSX2 Recovery tool and updates: https://github.com/$env:GITHUB_REPOSITORY`r`nStart with INSTALL.md (opens in Notepad)." | Out-File -Encoding ascii stage\GITHUB.txt
           Compress-Archive -Path stage\* -DestinationPath "dist\CSX2Dash-$v.zip"
-          Get-ChildItem dist -File | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name } | Out-File -Encoding ascii dist\SHA256SUMS.txt
+          $files = @(Get-ChildItem dist -File | Where-Object Name -ne 'SHA256SUMS.txt')
+          $sums = $files | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name }
+          $sums | Out-File -Encoding ascii dist\SHA256SUMS.txt
           Get-Content dist\SHA256SUMS.txt
           "VERSION=$v" >> $env:GITHUB_ENV
 
