@@ -25,6 +25,8 @@ namespace CSX2Dash
         public bool ShiftFlash = false;
         public bool FlagLeds = true;
         public bool ScreenOffWhenIdle = true;  // backlight + LEDs off when no game is live and when SimHub closes
+        public bool BrakeBiasPopup = true;     // show UGT pop-up page 501 when brake bias changes
+        public int BrakeBiasPopupMs = 1000;    // how long it stays up after the last change (UGT default Display_BBias)
     }
 
     [PluginDescription("Drives the Cube Controls CSX2 (UGT) wheel screen and shift lights from SimHub, using your UGT Manager layouts")]
@@ -122,7 +124,10 @@ namespace CSX2Dash
             var clock = Stopwatch.StartNew();
             long nextOpenTry = 0;
             Mode shown = Mode.None;
-            Layout current = null;
+            Layout current = null;                             // the user's selected page
+            Layout onScreen = null;                            // what's drawn now: current, or a UGT pop-up page
+            double lastBias = double.NaN;                      // brake bias pop-up (UGT special page 501)
+            long popupUntil = 0;
             var fontRefs = new Dictionary<int, int>();          // SD font number -> slot 3..17
             var sent = new Dictionary<Widget, string>();
             byte[] lastLeds = null;
@@ -187,6 +192,7 @@ namespace CSX2Dash
                             }
                             shown = Mode.Idle; lastLeds = null;
                         }
+                        lastBias = double.NaN; popupUntil = 0; onScreen = null;
                         Status = "connected (" + FirmwareVersion + ") - waiting for a game" + (dark ? " (wheel screen off)" : "");
                         Thread.Sleep(250);
                         continue;
@@ -199,7 +205,22 @@ namespace CSX2Dash
                         pageDirty = false;
                         current = Ugt.Layouts.FirstOrDefault(l => l.Id == Settings.PageLayoutId) ?? Ugt.Layouts.FirstOrDefault();
                         if (current == null) { Status = "no UGT layouts found"; Thread.Sleep(1000); continue; }
-                        ShowPage(current, fontRefs);
+                        onScreen = null;                               // force a redraw below
+                    }
+
+                    // Brake bias pop-up, as UGT's BrakeBias_Change (L28876): each change (re)starts the timer.
+                    // Ignore 0 so a session start (SimHub reporting 0 before the real value) doesn't trigger it.
+                    var biasPage = Settings.BrakeBiasPopup ? Ugt.Specials.FirstOrDefault(l => l.Id == 501) : null;
+                    double bias = Fields.BrakeBiasPercent(d);
+                    if (biasPage != null && lastBias > 0 && bias > 0 && Math.Abs(bias - lastBias) > 0.01)
+                        popupUntil = clock.ElapsedMilliseconds + Settings.BrakeBiasPopupMs;
+                    lastBias = bias;
+                    var target = biasPage != null && clock.ElapsedMilliseconds < popupUntil ? biasPage : current;
+
+                    if (target != onScreen)
+                    {
+                        ShowPage(target, fontRefs);
+                        onScreen = target;
                         sent.Clear(); lastLeds = null; shown = Mode.Live;
                         fields.ResetScroll();
                     }
@@ -207,7 +228,7 @@ namespace CSX2Dash
                     var mask = leds.Compute(fields.LedInput(d), clock.ElapsedMilliseconds);
                     bool ledsChanged = lastLeds == null || !mask.SequenceEqual(lastLeds);
                     bool anyText = false;
-                    foreach (var w in current.Widgets)
+                    foreach (var w in onScreen.Widgets)
                     {
                         if (w.X > 480 || w.Y > 272) continue;
                         ushort colour;
@@ -222,7 +243,7 @@ namespace CSX2Dash
                     if (ledsChanged && !anyText) dev.SetLeds(mask);
                     if (ledsChanged || anyText) lastLeds = mask;
 
-                    Status = "live - page " + current.Id + " (" + FirmwareVersion + ")";
+                    Status = (onScreen == current ? "live - page " + current.Id : "live - brake bias pop-up") + " (" + FirmwareVersion + ")";
                     Thread.Sleep(15);
                 }
                 catch (Exception e)

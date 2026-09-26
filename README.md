@@ -20,7 +20,8 @@ It draws **your existing UGT dash layouts** with the same backgrounds, fonts, po
 - Fills in several fields UGT showed as `NA` in some games: sector 4, oil/water temperature, car class, pit delta, leaderboards.
 - SimHub actions you can map to wheel buttons: `CSX2Dash.NextPage`, `CSX2Dash.PreviousPage`, `CSX2Dash.CycleDriverInfo`, `CSX2Dash.NextDriverPage`, `CSX2Dash.ToggleShiftFlash`.
 - **Screen off when idle** (new in 1.1.0, on by default): the wheel's screen and LEDs go dark while no game is running and when SimHub closes, instead of showing the logo all the time. They come back as soon as you're on track.
-- Settings page in SimHub: status, page picker, screen and LED brightness, shift flash, flag LEDs, screen-off-when-idle, and a "Reload UGT layouts" button.
+- **Brake bias pop-up** (new in 1.2.0, on by default): change brake bias on track and your UGT pop-up page (special page 501 from `layouts\Special`, with its SD-card background) shows the new percentage, just like UGT Manager did. It stays up while you keep adjusting, then returns to your page.
+- Settings page in SimHub: status, page picker, screen and LED brightness, shift flash, flag LEDs, screen-off-when-idle, brake bias pop-up on/off and time, and a "Reload UGT layouts" button.
 - Steps aside automatically while UGT Manager is running, so you can still use UGT to edit layouts.
 - If the wheel ever stops responding, it writes a "flight recorder" log of the last 300 commands to `%APPDATA%\CSX2Dash\freeze-*.log`, to help with bug reports.
 

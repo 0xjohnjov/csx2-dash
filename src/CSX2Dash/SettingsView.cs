@@ -48,6 +48,11 @@ namespace CSX2Dash
             screenOff.Click += (a, b) => { s.ScreenOffWhenIdle = screenOff.IsChecked == true; p.SettingsChanged(); };
             root.Children.Add(screenOff);
 
+            var bb = new CheckBox { Content = "Show the brake bias pop-up (UGT page 501) when you change brake bias", IsChecked = s.BrakeBiasPopup, Margin = new Thickness(0, 4, 0, 4) };
+            bb.Click += (a, b) => { s.BrakeBiasPopup = bb.IsChecked == true; p.SettingsChanged(); };
+            root.Children.Add(bb);
+            root.Children.Add(Slider("Brake bias pop-up time (ms)", 500, 5000, s.BrakeBiasPopupMs, v => { s.BrakeBiasPopupMs = v; }));
+
             var reload = new Button { Content = "Reload UGT layouts / settings", Width = 260, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 12, 0, 0) };
             reload.Click += (a, b) => { p.RequestReload(); Dispatcher.BeginInvoke(new Action(FillPages), DispatcherPriority.Background); };
             root.Children.Add(reload);

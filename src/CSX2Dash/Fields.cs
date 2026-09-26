@@ -110,6 +110,7 @@ namespace CSX2Dash
                             return int.TryParse(d.Gear, out g) ? Align(Number((double)g, D, 0, 0), D) : Align(d.Gear, D);
                         }
                     case "DRS": colour = d.DRSEnabled != 0 ? Best : Neutral; return Align("DRS", D);
+                    case "BBias": return Align(Number(BrakeBiasPercent(d), D, 1, false), D);   // UGT L201477
                     case "Pos": return Align("P" + d.Position, D, "right", false);
                     case "Sect": return Align("S" + sector, D, "right", false);
                     case "Laps": return Align(d.CurrentLap + "/" + (d.TotalLaps > 0 ? d.TotalLaps.ToString() : "--"), D, "center");
@@ -453,6 +454,16 @@ namespace CSX2Dash
             for (int i = 0; i < num8; i++) text5 = " " + text5;
             if (num8 < 0) text5 = text5.Substring(0, text5.Length + num8);
             return text5;
+        }
+
+        /// <summary>Front brake bias in percent (e.g. 56.0). AC's raw value is a fraction (UGT multiplies by 100);
+        /// accept either scale in case SimHub already converted it.</summary>
+        public static double BrakeBiasPercent(StatusDataBase d) { return BiasToPercent(d.BrakeBias); }
+
+        public static double BiasToPercent(double b)
+        {
+            if (double.IsNaN(b) || double.IsInfinity(b)) return 0;
+            return b > 0 && b <= 1.0 ? b * 100.0 : b;
         }
 
         public static string Number(double value, int Totaldigits, int trailDigits = 0, bool prefix = true)

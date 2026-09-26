@@ -31,6 +31,7 @@ namespace CSX2Dash
         public static readonly string Root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "UltimateGameTech");
 
         public List<Layout> Layouts = new List<Layout>();
+        public List<Layout> Specials = new List<Layout>();   // UGT pop-up pages, layouts\Special\5xx.xml (501 = brake bias)
         public int[] ShiftTable;                // 16 per-mille entries; [0..14] rev LEDs, [15] shift point
         public string ShiftTableName;
         public string PitLimiterMode;           // Alternate_Blinking / All_Blinking / Off
@@ -51,7 +52,8 @@ namespace CSX2Dash
             var u = new UgtFiles();
             u.LoadGeneral();
             var toc = u.LoadToc();
-            u.LoadLayouts(toc);
+            u.LoadLayouts(Path.Combine(Root, "layouts"), u.Layouts, toc, true);
+            u.LoadLayouts(Path.Combine(Root, "layouts", "Special"), u.Specials, toc, false);
             return u;
         }
 
@@ -99,10 +101,9 @@ namespace CSX2Dash
             return map;
         }
 
-        void LoadLayouts(Dictionary<string, uint> toc)
+        void LoadLayouts(string dir, List<Layout> into, Dictionary<string, uint> toc, bool required)
         {
-            string dir = Path.Combine(Root, "layouts");
-            if (!Directory.Exists(dir)) { Warnings.Add("UGT layouts folder not found"); return; }
+            if (!Directory.Exists(dir)) { if (required) Warnings.Add("UGT layouts folder not found"); return; }
             foreach (var f in Directory.GetFiles(dir, "*.xml"))
             {
                 try
@@ -124,11 +125,11 @@ namespace CSX2Dash
                             });
                     uint s;
                     if (toc.TryGetValue(string.Format("BGI{0:00000}.gci", l.Id), out s)) l.BackgroundSector = s;
-                    Layouts.Add(l);
+                    into.Add(l);
                 }
                 catch (Exception e) { Warnings.Add(Path.GetFileName(f) + ": " + e.Message); }
             }
-            Layouts = Layouts.OrderBy(l => l.Id).ToList();
+            into.Sort((a, b) => a.Id.CompareTo(b.Id));
         }
     }
 }

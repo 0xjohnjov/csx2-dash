@@ -20,9 +20,9 @@ using Microsoft.Win32.SafeHandles;
 [assembly: System.Reflection.AssemblyCompany("0xjohnjov")]
 [assembly: System.Reflection.AssemblyProduct("CSX2 Dash")]
 [assembly: System.Reflection.AssemblyCopyright("Copyright (c) 2026 0xjohnjov. MIT License. https://github.com/0xjohnjov/csx2-dash")]
-[assembly: System.Reflection.AssemblyVersion("1.1.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersion("1.1.0")]
+[assembly: System.Reflection.AssemblyVersion("1.2.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.2.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersion("1.2.0")]
 
 static class CSX2Recovery
 {

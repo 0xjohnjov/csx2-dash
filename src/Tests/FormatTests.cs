@@ -54,5 +54,13 @@ static class FormatTests
         Eq("gear 3 D1", CSX2Dash.Fields.Number(3, 1, 0, 0), "3");
         Eq("temp 85 D3", CSX2Dash.Fields.Number(85, 3, 0, false), "85");
         Eq("laps gap +2.3L (D6-1)", CSX2Dash.Fields.Number(2.3, 5, 1, true) + "L", "+2.3L");
+        // BBias (UGT L201477: Number(v, D, 1, prefix:false)); pop-up page 501 uses Digits 4
+        Eq("brake bias 56 D4", CSX2Dash.Fields.Number(56.0, 4, 1, false), "56.0");
+        Eq("brake bias 57.5 D4", CSX2Dash.Fields.Number(57.5, 4, 1, false), "57.5");
+        Eq("brake bias 100 D4", CSX2Dash.Fields.Number(100.0, 4, 1, false), "100");
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        Eq("bias fraction -> percent", CSX2Dash.Fields.BiasToPercent(0.565).ToString("0.0", inv), "56.5");
+        Eq("bias percent stays percent", CSX2Dash.Fields.BiasToPercent(56.5).ToString("0.0", inv), "56.5");
+        Eq("bias NaN -> 0", CSX2Dash.Fields.BiasToPercent(double.NaN).ToString("0.0", inv), "0.0");
     }
 }

@@ -326,5 +326,9 @@ Two hosts writing to the vendor channel at once lock the firmware up. Seen with 
 | All LEDs lit + brand logo, buttons work | Freshly powered up and not yet licensed. It will freeze in 30–60 s unless a host connects. |
 | All LEDs lit + brand logo, buttons dead | Licence watchdog froze it. Power-cycle, with the host already running. |
 | Screen dark, no LEDs | Normal with CSX2 Dash 1.1.0+ when no game is running (screen off when idle). |
+
+### 9.5 Pop-up ("special") pages
+
+UGT shows temporary pages on events (`GameData.*_Change` L28859-28990, queued by `AddspecialLayout` / `NextspecialLayout`). They are ordinary layouts in `layouts\Special\5xx.xml`, with backgrounds `BGI005xx` in the TOC: 501 brake bias, 502 engine/fuel map/ERS, 503 tyres, 504 fuel to add, 505 pit lane, 506 wing, 507 driving aids, 508 TC, 509 ABS, 510 stability. Display times: `Settings.Display_*` in ms (defaults L197092: BBias 1000, EngineMode 2000, Tires 3000, FuelAdd 1000, PitLane 7000, Wing 1000). For AC, brake bias fires when `physics.brakeBias*100` changes (L203244); the `BBias` widget is `Number(v, Digits, 1, prefix:false)` (L201477). A repeat event while the same pop-up is up only extends its timer. CSX2 Dash implements 501 (brake bias), **verified on hardware and in AC**.
 | Screen stuck mid-page, buttons dead | Firmware hang during drawing/page change. Power-cycle. |
 | `0x98` write times out | Firmware hung. Software resets (`0x94`, `pnputil /restart-device`) don't help; only a USB power cycle does. |
