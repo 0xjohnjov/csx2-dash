@@ -70,10 +70,10 @@ jobs:
       - name: Build and test
         shell: cmd
         run: |
-          call src\CSX2Dash\build.cmd || exit /b 1
-          call src\Tests\build.cmd || exit /b 1
-          call tools\CSX2Recovery\build.cmd || exit /b 1
-          call tools\diagnostics\build.cmd || exit /b 1
+          call "%GITHUB_WORKSPACE%\src\CSX2Dash\build.cmd" || exit /b 1
+          call "%GITHUB_WORKSPACE%\src\Tests\build.cmd" || exit /b 1
+          call "%GITHUB_WORKSPACE%\tools\CSX2Recovery\build.cmd" || exit /b 1
+          call "%GITHUB_WORKSPACE%\tools\diagnostics\build.cmd" || exit /b 1
 
       - name: Package
         shell: pwsh
